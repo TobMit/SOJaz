@@ -1,0 +1,70 @@
+TITLE MASM Template(main.asm)
+
+INCLUDE Irvine32.inc
+; "Zadanie"
+; "Definujte v pamati postupnost cisiel typu word. Nacitajte cislo. Zistite, ci sa nachadza v postupnosti. Odpoved (ano/nie) 
+
+.386; "Definuje 32 bitovy program, ktory ma pristup k 32 bitovym registrom"
+; .model flat, stdcall; "Zvoli pamatovy model flat a spristpupni volaciu metodu pre procedury - stdcall"
+.stack 4096; "Uvolni pre aplikaciu 4096 bajtov pamate"
+ExitProcess proto, dwExitCode:dword; "Deklaruje prototyp ExitProcess, co je defaultna funkcia pre Windows, ktora ukoncuje program, exitCode 0 znamena ukocenie programu bez chyby, ine definuju cislo chyb"
+.data
+inputMessage byte "Zadajte cislo, ktore chcete najst v postupnosti", 0
+outputMessage byte "Odpoved: ", 0
+numberArray word 50, 4, -6, 3, 5, 10
+len = ($ - numberArray) / type word - 1;"Premenna, ktora ma v sebe pocet prvkov pola"
+answerNo byte "nie", 0 
+answerYes byte "ano", 0
+found word 0
+numberToSearch word 1 dup(?)
+.code
+main PROC
+mov edx, offset inputMessage
+call WriteString
+call Crlf
+call ReadInt
+call Crlf
+mov edx, offset numberToSearch
+mov [edx], eax
+
+mov esi, len
+mov ebx, offset numberArray
+
+mainLoop:
+	mov ax, numberArray[esi * 2]
+	cmp ax, numberToSearch
+	je numberFound
+
+	cmp esi, 0
+	je output
+
+	dec esi
+	jmp mainLoop
+
+numberFound:
+	inc found
+	jmp output
+
+output:
+	mov edx, offset outputMessage
+	call WriteString
+	jmp outputAnswer
+
+outputAnswer:
+	cmp found, 1
+	je foundNumber
+	mov edx, offset answerNo
+	call WriteString
+	jmp ExitProgram
+
+foundNumber:
+	mov edx, offset answerYes
+	call WriteString
+	jmp ExitProgram
+
+ExitProgram:
+	invoke ExitProcess, 0
+
+main ENDP
+
+END main

@@ -1,0 +1,266 @@
+TITLE MASM Template(main.asm)
+
+; "Zadanie"
+; "Vygenerujte 10-prvkovu mnozinu X celych cisiel z intervalu <0;31>.
+; "a.Vypiste ju na obrazovku."
+; "b.Vytvorte jej bitovu reprezentaciu."
+; "c.Vypiste mnozinu z jej bitovej reprezentacie."
+; "d.Vytvorte proceduru, ktora vygeneruje 10 - prvkovu mnozinu celych cisiel z intervalu < 0; 31 > .Mnozina je parameter procedury volany odkazom."
+; "e.Vytvorte proceduru pre vypis mnoziny z jej bitovej reprezentacie.Mnozina je parameter volany hodnotou."
+; "f.Vypocitajte a vypiste doplnok mnoziny X."
+; "g.Vygenerujte druhu mnozinu Y.Vypocitajte a vypiste prienik a zjednotenie mnozin X a Y."
+
+; "Poznamky ku zadaniu :"
+; "Bitova reprezentacia po Slovensky znamena: Ak mam mnozinu 1, 2, 3 tak jej bitova reprezentacia bude sucet 2^cislo, tj. 2^1 + 2^2 + 2^3 = 13, preto bitova reprezentacia danej mnoziny je 13."
+
+
+INCLUDE Irvine32.inc
+; "Prototypy vsetkych pouzitych procedur"
+VygenerujMnozinu proto, offsetMnoziny: DWord
+VypisMnozinu proto, Mnozina : DWord
+VygenerujLepsiuMnozinu proto, offsetMnoziny : DWord
+DoplnokMnoziny proto, offsetMnoziny : DWord
+ZjednotenieMnozin proto, offsetMnozinyA : Dword, offsetMnozinyB : DWord
+PrienikMnozin proto, offsetMnozinyA : Dword, offsetMnozinyB : DWord
+
+.386; "Definuje 32 bitovy program, ktory ma pristup k 32 bitovym registrom"
+;.model flat, stdcall; "Zvoli pamatovy model flat a spristpupni volaciu metodu pre procedury - stdcall"
+.stack 4096; "Uvolni pre aplikaciu 4096 bajtov pamate"
+ExitProcess proto, dwExitCode:dword; "Deklaruje prototyp ExitProcess, co je defaultna funkcia pre Windows, ktora ukoncuje program, exitCode 0 znamena ukocenie programu bez chyby, ine definuju cislo chyb"
+
+.data
+mnozinaA dd ?
+mnozinaB dd ?
+
+; "Vypisovanie premenne"
+prvkyMnozinyA db "Prvky mnoziny A:", 0
+prvkyMnozinyB db "Prvky mnoziny B:", 0
+
+doplnokMnozinyA db "Doplnok mnoziny A:", 0
+doplnokMnozinyB db "Doplnok mnoziny B:", 0
+
+zjednotenieMnozinText db "Zjednotenie mnozin:", 0
+prienikMnozinText db "Prienik mnozin:", 0
+.code
+main PROC
+call Randomize; "AK neni zavolana, generuje stale rovnake cisla"
+
+invoke VygenerujLepsiuMnozinu, offset mnozinaA
+
+invoke VygenerujLepsiuMnozinu, offset mnozinaB
+
+mov edx, offset prvkyMnozinyA
+call WriteString
+call Crlf
+
+invoke VypisMnozinu, mnozinaA
+
+mov edx, offset prvkyMnozinyB
+call WriteString
+call Crlf
+
+invoke VypisMnozinu, mnozinaB
+
+mov edx, offset doplnokMnozinyA
+call WriteString
+call Crlf
+
+invoke DoplnokMnoziny, offset mnozinaA
+
+mov edx, offset doplnokMnozinyB
+call WriteString
+call Crlf
+
+invoke DoplnokMnoziny, offset mnozinaB
+
+mov edx, offset zjednotenieMnozinText
+call WriteString
+call Crlf
+
+invoke zjednotenieMnozin, offset mnozinaA, offset mnozinaB
+
+mov edx, offset prienikMnozinText
+call WriteString
+call Crlf
+
+invoke prienikMnozin, offset mnozinaA, offset mnozinaB
+
+invoke ExitProcess, 0
+main ENDP
+
+; "Tato funkcia na zadanie staci, ale ja som Fajnsmeker :)"
+; "--------------------------------------------------------------"
+VygenerujMnozinu proc uses eax ebx ecx edx offsetMnoziny : DWord
+; "Funkcia na vygenerovanie nahodnych prvkov v intervale <0; 31> a nasledneho vlozenia do zadanej mnoziny"
+; "Vstup: offsetMnoziny : dw - offset premennej mnoziny"
+; "Vystup: "
+; "--------------------------------------------------------------"
+mov ebx, offsetMnoziny
+mov ecx, 10
+PridajPrvok:
+	; "Nahodna generacia prvku"
+	push ecx
+	mov eax, 32
+	call RandomRange
+
+	mov cl, al
+	mov edx, 1
+	shl edx, cl
+	add [ebx], edx
+
+	pop ecx
+	loop PridajPrvok
+ret
+VygenerujMnozinu endp
+
+
+; "--------------------------------------------------------------"
+VygenerujLepsiuMnozinu proc uses eax ebx ecx edx offsetMnoziny : DWord
+; "Funkcia na vygenerovanie prave 10 nahodnych prvkov v intervale <0; 31> a nasledneho vlozenia do zadanej mnoziny"
+; "Vstup: offsetMnoziny : dw - offset premennej mnoziny"
+; "Vystup: "
+; "--------------------------------------------------------------"
+.data
+plnaMnozina db 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
+vygenerovanePrvky db 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+.code
+mov ebx, offsetMnoziny
+mov esi, 0
+
+.while (esi < 10)
+	GenerujPrvok:
+		mov eax, 32
+		call RandomRange
+
+		cmp plnaMnozina[eax], 1
+		je zapisPrvok
+
+	jmp GenerujPrvok
+
+	ZapisPrvok:
+		mov vygenerovanePrvky[eax], 1
+		mov plnaMnozina[eax], 0
+		inc esi
+.endw
+
+mov ebx, offsetMnoziny
+mov esi, 0
+
+
+PridajPrvok:
+	cmp esi, 32
+	je UkonciFunkciu
+	
+	movzx eax, vygenerovanePrvky[esi]
+	mov ecx, esi
+	mov edx, eax
+	shl edx, cl
+	add[ebx], edx
+	inc esi
+	jmp PridajPrvok
+
+UkonciFunkciu:
+	; "Reinicializacia pola, vsetky miesta sa nahradia prvkom v eax, ecx ma v sebe pocet prvkov pola a edx offset pola"
+	xor eax, eax
+	lea edi, vygenerovanePrvky
+	mov ecx, 32
+	cld
+	rep stosb
+
+	; "Reinicializacia pola, vsetky miesta sa nahradia prvkom v eax, ecx ma v sebe pocet prvkov pola a edx offset pola"
+	mov eax, 1
+	lea edi, plnaMnozina
+	mov ecx, 32
+	cld
+	rep stosb
+	ret
+VygenerujLepsiuMnozinu endp
+
+
+; "--------------------------------------------------------------"
+VypisMnozinu proc uses eax ebx ecx edx esi Mnozina : DWord
+; "Funkcia vypise mnozinu danu v tvare bitovej reprezentacie"
+; "Vstup: offsetMnoziny : dw - offset premennej mnoziny"
+; "Vystup: "
+; "--------------------------------------------------------------"
+
+mov ecx, 32
+xor esi, esi
+
+VypisPrvok:
+	push ecx; "Zalohovanie ecx v stacku"
+	mov edx, 1
+
+	mov ecx, esi
+	shl edx, cl
+
+	test Mnozina, edx
+
+	jz NenachadzaSaVMnozine
+
+	mov eax, esi
+	call WriteInt
+
+	mov eax, 9
+	call WriteChar
+
+NenachadzaSaVMnozine:
+	inc esi;
+	pop ecx;
+loop VypisPrvok
+call Crlf
+ret
+VypisMnozinu endp
+
+; "--------------------------------------------------------------"
+DoplnokMnoziny proc uses eax ebx ecx edx esi offsetMnoziny : DWord
+; "Funkcia vypise doplnok mnoziny"
+; "Vstup: offsetMnoziny : dw - offset premennej mnoziny"
+; "Vystup: "
+; "--------------------------------------------------------------"
+mov ebx, offsetMnoziny
+
+mov eax, [ebx]
+
+not eax
+
+invoke VypisMnozinu, eax
+
+ret
+
+DoplnokMnoziny endp
+
+
+
+; "--------------------------------------------------------------"
+ZjednotenieMnozin proc uses eax ebx ecx edx esi offsetMnozinyA : DWord, offsetMnozinyB : Dword
+; "Funkcia vypise zjednotenie mnozin"
+; "Vstup: offsetMnoziny : dw - offset premennej mnoziny"
+; "Vystup: "
+; "--------------------------------------------------------------"
+
+mov ebx, offsetMnozinyA
+mov edx, offsetMnozinyB
+mov eax, [ebx]
+or eax, [edx]
+
+invoke VypisMnozinu, eax
+ret
+ZjednotenieMnozin endp
+
+; "--------------------------------------------------------------"
+PrienikMnozin proc uses eax ebx ecx edx esi offsetMnozinyA : DWord, offsetMnozinyB : Dword
+; "Funkcia vypise zjednotenie mnozin"
+; "Vstup: offsetMnoziny : dw - offset premennej mnoziny"
+; "Vystup: "
+; "--------------------------------------------------------------"
+
+mov ebx, offsetMnozinyA
+mov edx, offsetMnozinyB
+mov eax, [ebx]
+and eax, [edx]
+
+invoke VypisMnozinu, eax
+ret
+PrienikMnozin endp
+END main

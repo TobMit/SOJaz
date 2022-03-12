@@ -1,0 +1,31 @@
+TITLE MASM Template(main.asm)
+
+INCLUDE Irvine32.inc
+; "Zadanie"
+; "3. Vypiste retazec na obrazovku tak, aby kazde pismeno retazca spolu s nasledujucim pismenom v abecede bolo na samostatnom riadku. Napr. retazec AHOJ sa vypise takto: 
+;	AB
+;	HI
+;	OP
+;	JK" 
+.data
+myMessage byte "message", 0
+
+.code
+main PROC
+	mov ebx, offset myMessage
+	xor edi, edi
+	mainLoop:
+		mov al, [ebx + edi]
+		cmp al, 0
+		je exitProgram
+		call WriteChar
+		inc al
+		call WriteChar
+		call Crlf
+		inc edi
+		jmp mainLoop
+	exitProgram:
+		exit
+main ENDP
+
+END main

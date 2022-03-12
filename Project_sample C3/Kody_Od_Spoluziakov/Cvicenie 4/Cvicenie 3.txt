@@ -1,0 +1,46 @@
+TITLE MASM Template(main.asm)
+
+INCLUDE Irvine32.inc
+; "Zadanie"
+; "3. Nacitajte cele cislo v rozsahu <-32 768; 32 767>. Vypocitajte hodnotu cisla a ulozte ju do registra AX."
+.data
+inputValue byte 6 dup(0)
+isNegative byte 1 dup(0)
+.code
+main PROC
+mov edx, offset inputValue
+mov ecx, sizeof inputValue
+call ReadString
+
+xor edi, edi
+xor eax, eax
+xor ebx, ebx
+mainLoop:
+	mov al, [edx + edi]
+	cmp al, '-'
+	je setIsNegative
+	cmp al, 0
+	je writeOutput
+	sub al, 48 ;to iste ako and al, 0Fh
+	imul bx, 10
+	add bx, ax
+	inc edi
+	jmp mainLoop
+setIsNegative:
+	mov isNegative, 1
+	inc edi
+	jmp mainLoop
+negateNumber:
+	neg bx
+	jmp exitProgram
+writeOutput:
+	cmp isNegative, 1
+	je negateNumber
+	jmp exitProgram
+exitProgram:
+	movsx eax, bx
+	call WriteInt
+	exit
+main ENDP
+
+END main

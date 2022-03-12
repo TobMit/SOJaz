@@ -1,0 +1,185 @@
+TITLE MASM Template(main.asm)
+
+; "Zadanie"
+; "V subore su zakladne charakteristiky okresov Zilinskeho kraja - pocet obyvatelov, rozloha a pocet obci."
+; "1.Vypiste, kolko okresov ma menej nez 50 000 obyvatelov."
+; "2.Vypiste nazvy okresov, ktore maju menej nez 50 000 obyvatelov."
+; "3.Vypocitajte priemerny pocet obyvatelov okresu.Vysledok vypiste pomocou funkcie WriteFloat - vypise register st(0)."
+; "4.Vypiste nazvy okresov, ktore maju nadpriemerny pocet obyvatelov."
+
+; "Poznamky ku zadaniu"
+; "Cesta ku suboru je D:\FRI\3.Semester\Strojovo orientovane jazyky\zadania\Cvicenia 12\Okresy.csv"
+
+include Irvine32.inc
+
+; "Prototypy vsetkych pouzitych procedur"
+OperacieSOkresmi proto, offsetPolaHodnot: dword, offsetPolaNazvov : dword
+ExitProcess proto, dwExitCode:dword;
+
+
+; "Konstanty
+
+.386; "Definuje 32 bitovy program, ktory ma pristup k 32 bitovym registrom"
+;.model flat, stdcall; "Zvoli pamatovy model flat a spristpupni volaciu metodu pre procedury - stdcall"
+.stack 4096; "Uvolni pre aplikaciu 4096 bajtov pamate"
+
+.data
+Bytca db "Bytca", 0
+Cadca db "Cadca", 0
+DolnyKubin db "Dolny Kubin", 0
+KysNovMesto db "Kysucke Nove Mesto", 0
+LipMikulas db "Liptovsky Mikulas", 0
+Martin db "Martin", 0
+Namestovo db "Namestovo", 0
+Ruzomberok db "Ruzomberok", 0
+Tvrdosin db "Tvrdosin", 0
+TurTeplice db "Turcianske Teplice", 0
+Zilina db "Zilina", 0
+
+task1Message db "Pocet okresov pod 50 000 obyvatelov", 0
+task2Message db "Priemerna hodnota poctu obyvatelov: ", 0
+task3Message db "Mesta s nadpriemernym poctom obyvatelov", 0
+
+nazvy dd Bytca, Cadca, DolnyKubin, KysNovMesto, LipMikulas, Martin, Namestovo, Ruzomberok, TurTeplice, Tvrdosin, Zilina
+
+hodnoty	dd 30712, 282, 11
+		dd 90850, 761, 20
+		dd 39494, 490, 23
+		dd 33075, 174, 13
+		dd 72451, 1341, 54
+		dd 96742, 736, 40
+		dd 61526, 691, 23
+		dd 57044, 647, 24
+		dd 16070, 393, 25
+		dd 36024, 479, 13
+		dd 156618, 815, 50
+
+pocetPrvkov equ lengthof hodnoty;
+pocetMiest equ sizeof nazvy / type nazvy
+pocetMiest2 dd sizeof nazvy / type nazvy
+
+.code
+main PROC
+finit; "Inicializacia FPU procesora"
+
+invoke OperacieSOkresmi, offset hodnoty, offset nazvy
+
+invoke ExitProcess, 0
+main ENDP
+
+
+; "---------------------------------------------------------------------------------------------"
+OperacieSOkresmi proc uses eax ebx ecx edx esi edi offsetPolaHodnot : dword, offsetPolaNazvov : dword
+; "Funkcia ktora z nacitanych dat vypise okresy, ktore maju nad 50 000 obyvatelov"
+; "Vstup - poleHodnot: pole, kde sa nachadzaju hodnoty o danych mestach, poleNazvov: pole, kde sa nachadzaju nazvy miest"
+; "Vystup"
+; "---------------------------------------------------------------------------------------------"
+.data
+dvojbodka db ": ", 0
+.code
+mov ebx, offsetPolaNazvov
+mov edx, offsetPolaHodnot
+
+push edx
+mov edx, offset task1Message
+call WriteString
+call Crlf
+pop edx
+
+; "Vypis okresy ktore maju menej ako 50 000 obyvatelov"
+mov ecx, pocetMiest
+xor esi, esi
+xor edi, edi
+MainLoop:
+	mov eax, dword ptr [edx + esi * 4]
+	cmp eax, 50000
+	jb vypisPrvok
+	jmp continueLoop
+	VypisPrvok:
+		push edx
+		mov edx, dword ptr [ebx + edi * 4]
+		call WriteString
+
+		mov edx, offset dvojbodka
+		call WriteString
+		pop edx
+
+		call WriteInt
+		call Crlf
+	continueLoop:
+		add esi, pocetPrvkov
+		inc edi
+loop MainLoop
+
+push edx
+call Crlf
+mov edx, offset task2Message
+call WriteString
+pop edx
+
+;"Vypocitaj priemerny pocet obyvatelov"
+xor esi, esi
+mov ecx, pocetMiest
+
+; "Prikaz fiadd sa nepripocita, pokial je v st(0) null, preto musim prve cislo vlozit zvlast"
+fild dword ptr[edx]
+add esi, pocetPrvkov
+
+MainLoop2:
+fiadd dword ptr [edx + esi * 4]
+
+add esi, pocetPrvkov
+loop MainLoop2
+
+fild pocetMiest2
+
+fdivp st(1), st(0)
+
+call WriteFloat
+call Crlf
+
+push edx
+call Crlf
+mov edx, offset task3Message
+call WriteString
+call Crlf
+pop edx
+
+;"Vypis vsetky mesta, ktorych pocet obyvatelov je nad priemer"
+xor esi, esi
+xor edi, edi
+xor eax, eax
+mov ecx, pocetMiest
+
+MainLoop3:
+	ficom dword ptr[edx + esi * 4]
+	fnstsw ax; "Skopirovanie status wordu do ax"
+	sahf ;"Skopirovanie ah do eflags"
+	jb VypisMesto
+	jmp Continue
+
+	VypisMesto:
+		push edx
+		mov edx, dword ptr [ebx + edi * 4]
+		call WriteString
+
+		mov edx, offset dvojbodka
+		call WriteString
+		pop edx
+
+		mov eax, dword ptr[edx + esi * 4]
+		call WriteInt
+		call Crlf
+	Continue:
+		add esi, pocetPrvkov
+		inc edi
+
+loop MainLoop3
+
+
+
+ukonciProceduru:
+	ret
+OperacieSOkresmi endp
+
+END main

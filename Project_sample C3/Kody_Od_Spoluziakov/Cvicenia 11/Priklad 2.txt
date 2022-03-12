@@ -1,0 +1,125 @@
+TITLE MASM Template(main.asm)
+
+; "Zadanie"
+; "Zostavte funkciu v JSA pre vypocet korena rovnice sin(x)-x/2=0 pomocou Newtonovej metody."
+; "Pociatocny odhad nacitajte zklavesnice.Jednotlive iteracie metody riadi rekurzia."
+; "Rovnica ma prave tri korene, pre najdenie korenov pouzite nasledovne pociatocne odhady : -3, -0.4 a 8."
+
+; "Poznamky ku zadaniu"
+; "Derivacia funkcie sin(x) - x/2 je cos(x) - 1/2"
+
+INCLUDE Irvine32.inc
+; "Prototypy vsetkych pouzitych procedur"
+RootFinder proto
+ExitProcess proto, dwExitCode:dword;
+
+
+.386; "Definuje 32 bitovy program, ktory ma pristup k 32 bitovym registrom"
+;.model flat, stdcall; "Zvoli pamatovy model flat a spristpupni volaciu metodu pre procedury - stdcall"
+.stack 4096; "Uvolni pre aplikaciu 4096 bajtov pamate"
+
+.data
+rootApproximation real8 ?
+rootFound real8 ?
+epsilon real8 1.0E-12
+
+rootCountMessage db "Zadajte pocet korenov, ktore chceme hladat: ", 0
+rootMessage db "Zadajte odhad korena: ", 0
+rootFoundMessage db "Koren funkcie je: ", 0
+.code
+main PROC
+finit; "Inicializacia FPU procesora"
+
+mov edx, offset rootCountMessage
+call WriteString
+call ReadInt
+call Crlf
+mov ecx, eax
+
+HladanieKorenov:
+	mov edx, offset rootMessage
+	call WriteString
+	call ReadFloat
+	fstp rootApproximation
+	invoke RootFinder
+
+	mov edx, offset rootFoundMessage
+	call WriteString
+	
+	fld rootFound
+	call WriteFloat
+
+	call Crlf
+
+loop HladanieKorenov
+
+invoke ExitProcess, 0
+main ENDP
+
+
+; "---------------------------------------------------------------------------------------------"
+RootFinder proc
+; "Funkcia na vypocitanie jedneho korena funkcie sin(x) - x/2 pomocou Newtonovej metody"
+; "Vstup - rootApproximation - odhad hodnoty korena, ktory sa snazime najst"
+; "Vystup - hodnota najdeneho korena v registry st(0)"
+; "---------------------------------------------------------------------------------------------"
+.data
+two dd 2 ;"Kedze budeme delit 2, musim si vytvorit premennu s touto hodnotou"
+.code
+push ebp; "Pridaj do stacku aktualnu adresu"
+mov ebp, esp; "Skopiruj prave vlozenu adresu naspat"
+
+FindRoot:
+	; "Vypocet sin(x) - x/2"
+	fld rootApproximation
+	fsin ;"sin(x) v st(0)"
+	fld rootApproximation
+
+	fild two ; "sin(x) v st(2), rootApproximation v st(1), 2 v st(0)"
+
+	fdivp st(1), st(0) ; "x/2 v st(0), sin(x) v st(1)"
+	fsubp st(1), st(0)
+
+	; "Vypocet cos(x) - 1/2"
+	fld rootApproximation
+	fcos
+	fld1
+	fild two
+	fdivp st(1), st(0)
+	fsubp st(1), st(0)
+
+	; "f(x) / f'(x)"
+	fdivp st(1), st(0)
+
+	; "x - f(x) / f'(x)"
+	fld rootApproximation
+	fxch st(1)
+	fsubp st(1), st(0)
+
+	fst rootFound
+	
+	;"Urcenie ci je vypocitany koren rovnaky ako zadany odhad"
+	fld epsilon
+	fxch st(1)
+	fsub rootApproximation
+	fabs
+	fcomi ST(0), ST(1)
+	ja skip
+
+	;"Premazanie celeho FPU"
+	fstp st(0)
+	fstp st(0)
+	jmp L2
+	
+Skip:
+	fstp st(0)
+	fstp st(0)
+	fld rootFound
+	fstp rootApproximation
+	call RootFinder
+L2 :
+	pop ebp
+	ret 
+RootFinder endp
+
+END main

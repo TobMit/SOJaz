@@ -1,0 +1,95 @@
+TITLE MASM Template(main.asm)
+
+include Irvine32.inc
+include macros.inc
+
+; "Prototypy vsetkych pouzitych procedur"
+OutputFile proto
+ExitProcess proto, dwExitCode:dword;
+
+
+; "Konstanty"
+BUFFER_SIZE = 5000
+
+.386; "Definuje 32 bitovy program, ktory ma pristup k 32 bitovym registrom"
+;.model flat, stdcall; "Zvoli pamatovy model flat a spristpupni volaciu metodu pre procedury - stdcall"
+.stack 4096; "Uvolni pre aplikaciu 4096 bajtov pamate"
+
+.data
+
+.code
+main PROC
+finit; "Inicializacia FPU procesora"
+
+invoke OutputFile
+
+invoke ExitProcess, 0
+main ENDP
+
+
+; "---------------------------------------------------------------------------------------------"
+OutputFile proc
+; "Funkcia nacita subor a vypise jeho obsah na obrazovku"
+; "Vstup - rootApproximation - odhad hodnoty korena, ktory sa snazime najst"
+; "Vystup - hodnota najdeneho korena v registry st(0)"
+; "---------------------------------------------------------------------------------------------"
+.data
+buffer byte BUFFER_SIZE dup(? )
+filename byte 80 dup(? )
+fileHandle handle ?
+.code
+
+; "Zadaj nazov suboru"
+mWrite "Zadaj nazov suboru"
+mov edx, offset filename
+mov ecx, sizeof filename
+call ReadString
+
+; "Otvor subor na citanie"
+mov edx, offset filename
+call OpenInputFile
+mov fileHandle, eax
+
+; "Over ci je chyba"
+cmp eax, INVALID_HANDLE_VALUE; "Chyba pri nacitani suboru"
+jne pokracujVNacitavani
+mWrite < "Subor sa nepodarilo otvorit", 0dh, 0ah>
+jmp ukonciProceduru
+
+pokracujVNacitavani:
+	; "Nacitaj subor do buffera"
+	mov edx, offset buffer
+	mov ecx, BUFFER_SIZE
+	call ReadFromFile
+	jnc overVelkostBuffera ;"Chyba pri citani?"
+	mWrite "Chyba pri citani suboru"
+	call WriteWindowsMsg
+	jmp zavriSubor
+
+overVelkostBuffera:
+	cmp eax, BUFFER_SIZE
+	jb bufferVPoriadku
+	mWrite <"Chyba! Buffer je prilis maly pre dany subor", 0dh, 0ah>
+	jmp ukonciProceduru
+
+bufferVPoriadku:
+	mov buffer[eax], 0
+	mWrite "Velkost suboru: "
+	call WriteDec
+	call Crlf
+
+	; "Zobraz buffer"
+	mWrite <"Buffer: ", 0dh, 0ah, 0dh, 0ah>
+	mov edx, offset buffer
+	call WriteString
+	call Crlf
+
+zavriSubor:
+	mov eax, fileHandle
+	call CloseFile
+
+ukonciProceduru:
+	ret
+OutputFile endp
+
+END main

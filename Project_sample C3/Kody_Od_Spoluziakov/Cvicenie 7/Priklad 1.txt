@@ -1,0 +1,128 @@
+TITLE MASM Template(main.asm)
+
+INCLUDE Irvine32.inc
+; "Zadanie"
+; "Sformulujte procedury pre nacitanie a vypis cisla. V procedurach zachovajte nastavenie registrov z volajuceho programu."
+
+.386; "Definuje 32 bitovy program, ktory ma pristup k 32 bitovym registrom"
+;.model flat, stdcall; "Zvoli pamatovy model flat a spristpupni volaciu metodu pre procedury - stdcall ------- SPOSOBUJE CHYBU, ZISTIT PRECO"
+.stack 4096; "Uvolni pre aplikaciu 4096 bajtov pamate"
+ExitProcess proto, dwExitCode:dword; "Deklaruje prototyp ExitProcess, co je defaultna funkcia pre Windows, ktora ukoncuje program, exitCode 0 znamena ukocenie programu bez chyby, ine definuju cislo chyb"
+.data
+
+.code
+main PROC
+
+call read_int
+call write_int
+
+invoke ExitProcess, 0
+
+main ENDP
+
+; "Procedura na nacitanie cisla z klavesnice a vypocitanie jeho hodnoty"
+; "return: eax - hodnota cisla"
+read_int proc uses ebx ecx edx edi
+
+local inputValue[7]: byte, isNegative[1] : byte ;"Definicia lokalnej premennej, nemozno do nej priradit hodnotu, iba vyhradi dany pocet bajtov v pamati"
+
+.code
+lea edx, inputValue ;"V procedure sa nemoze pouzivat offset, iba lea"
+mov ecx, sizeof inputValue
+
+call ReadString
+
+xor edi, edi
+xor eax, eax
+xor ebx, ebx
+
+mainLoop :
+	mov al, [edx + edi]
+	cmp al, '-'
+	je setIsNegative
+	cmp al, 0
+	je writeOutput
+	sub al, 48; to iste akoand al, 0Fh
+	imul bx, 10
+	add bx, ax
+	inc edi
+	jmp mainLoop
+
+setIsNegative :
+	mov isNegative, 1
+	inc edi
+	jmp mainLoop
+
+negateNumber :
+	neg bx
+	jmp exitProgram
+
+writeOutput :
+	cmp isNegative, 1
+	je negateNumber
+	jmp exitProgram
+
+exitProgram :
+	movsx eax, bx
+	ret
+read_int endp
+
+;"Procedura na vypisanie 16 bitoveho cisla na konzolu"
+;"Requires: cislo v eax"
+write_int proc uses ebx ecx edx esi edi
+
+local number[7]: byte
+delitel = byte ptr 10 ;"Definicia lokalnej premennej v ktorej sa nachadza aj hodnota, da sa dostat ku hodnote iba cez register"
+isNegative = byte ptr 0
+
+mov edi, delitel
+
+xor edx, edx
+xor esi, esi
+
+lea ebx, number ;"pri lokalne deklarovanych premennych nemozeme pouzit offset"
+
+test ax, ax ;"Porovna flagy zadanych registrov"
+js setIsNegative ;"Ak je Sign flag rovny jednej, tak skoc"
+
+mainLoop :
+	idiv di; "AX:delitel, Podiel ide do AX, zvysok do DX"
+	continueMainLoop:
+	add dl, 48; "Zmena cisla na ASCII hodnotu cisla, to iste ako or dl, 30h"
+	mov[ebx + esi], dl
+	inc esi
+	cmp ax, 0
+	je WriteOutput
+	xor dx, dx; "Prikaz idiv funguje len ak je dx rovne 0"
+	jmp mainLoop
+
+setIsNegative :
+	mov edi, 1
+	push edi ;"Da do pamate hodnotu zadaneho registra, musel som pouzit, kedze mi dosli volne registre"
+	neg ax
+	mov edi, delitel
+	jmp mainLoop
+
+writeNegativeSign :
+	mov al, '-'
+	call WriteChar
+	jmp WriteOutputLoop
+
+WriteOutput : ; "Kedze je cislo zapisane v premennej number opacne, musime ho vypisat odzadu"
+	mov ecx, esi
+	pop edi ;"Vrati poslednu hodnotu z pamate do daneho registra, POZOR! funguje na principe vytiahnutia poslednej vlozenej hodnoty ako prvej"
+	cmp edi, 1
+	je writeNegativeSign
+
+WriteOutputLoop :
+	mov al, [ebx + ecx - 1]
+	call WriteChar
+	loop WriteOutputLoop; "Prikaz loop zopakuje prikaz az pokial sa ecx nerovna 0, potom skoci na instrukciu/instrukcie pod tymto prikazom"
+	jmp ExitProgram
+
+ExitProgram :
+	ret
+write_int endp
+
+
+END main

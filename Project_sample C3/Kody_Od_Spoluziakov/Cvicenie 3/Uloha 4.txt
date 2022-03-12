@@ -1,0 +1,51 @@
+TITLE MASM Template(main.asm)
+
+INCLUDE Irvine32.inc
+; "Zadanie"
+; "4. Nacitajte znak. Vypiste pocet vyskytov zadaneho znaku v retazci."
+.data
+inputMessage byte "Zadajte 1 znak", 0
+outputMessage byte "Pocet vyskytov zadaneho znaku v texte: ", 0
+searchedChar byte 1 dup(?)
+message byte "Jaaaaa", 0
+
+.code
+main PROC
+;"Nacitaj jeden znak"
+mov edx, offset inputMessage
+call WriteString
+call Crlf
+
+call ReadChar
+mov searchedChar, al
+call Crlf
+
+xor edi, edi
+xor esi, esi
+
+mov ebx, offset message
+
+mainLoop:
+	mov al, [ebx + edi]
+	cmp al, 0
+	je outputValue
+	cmp al, searchedChar
+	je incrementValue
+	inc edi
+	jmp mainLoop
+incrementValue:
+	inc esi
+	inc edi
+	jmp mainLoop
+outputValue:
+	mov edx, offset outputMessage
+	call WriteString
+
+	mov eax, esi
+	call WriteInt
+	jmp exitProgram
+exitProgram:
+	exit
+main ENDP
+
+END main

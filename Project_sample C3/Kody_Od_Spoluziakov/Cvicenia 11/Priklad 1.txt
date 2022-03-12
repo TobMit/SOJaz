@@ -1,0 +1,78 @@
+TITLE MASM Template(main.asm)
+
+; "Zadanie"
+; "Zostavte funkciu v JSA pre vypocet prepony pravouhleho trojuholnika podla Pytagorovej vety."
+; "Parametrami funkcie budu dlzky odvesien trojuholnika a vystupny parameter bude dlzka prepony."
+
+INCLUDE Irvine32.inc
+; "Prototypy vsetkych pouzitych procedur"
+ExitProcess proto, dwExitCode:dword;
+PreponaTrojuholnika proto, prvaOdvesna: real10, druhaOdvesna : real10
+
+.386; "Definuje 32 bitovy program, ktory ma pristup k 32 bitovym registrom"
+;.model flat, stdcall; "Zvoli pamatovy model flat a spristpupni volaciu metodu pre procedury - stdcall"
+.stack 4096; "Uvolni pre aplikaciu 4096 bajtov pamate"
+
+.data
+odvesna1Message db "Zadajte prvu odvesnu: ", 0
+odvesna2Message db "Zadajte druhu odvesnu: ", 0
+preponaMessage db "Hodnota prepony pre dany trojuholnik je ", 0
+odvesna1 real10 ?
+odvesna2 real10 ?
+prepona real10 ?
+
+.code
+main PROC
+finit; "Inicializacia FPU procesora"
+
+; "Nacitanie hodnot odvesien"
+mov edx, offset odvesna1Message
+call WriteString
+
+call ReadFloat; "Nacitanie prvej odvesny"
+fstp odvesna1; "Skopiruje obsach registra ST(0) do premennej odvesna1 a zmaze hodnotu ST(0)"
+
+call Crlf
+mov edx, offset odvesna2Message
+call WriteString
+
+call ReadFloat; "Nacitanie druhej odvesny"
+fstp odvesna2
+
+
+invoke PreponaTrojuholnika, odvesna1, odvesna2
+
+call Crlf
+mov edx, offset preponaMessage
+call WriteString
+
+fld prepona
+call WriteFloat
+
+
+invoke ExitProcess, 0
+main ENDP
+
+
+; "---------------------------------------------------------------------------------------------"
+PreponaTrojuholnika proc prvaOdvesna : real10, druhaOdvesna : real10
+; "Funkcia na vypocitanie prepony pravouhleho trojuholnika"
+; "Vstup - prvaOdvesna - prva odvesna trojuholnika, druhaOdvesna - druha odvesna trojuholnika"
+; "Vystup - hodnota prepony v premennej prepona"
+; "---------------------------------------------------------------------------------------------"
+; "Nacitanie premennych do FPU registrov"
+fld prvaOdvesna
+fmul st(0), st(0); "Z nejakeho dovodu treba pouzivat st(0) namiesto st0 .... Vykona operaciu st(0) = a * a = a^2"
+fld druhaOdvesna
+fmul st(0), st(0)
+
+; "Pocitanie Pytagorovej vety"
+fadd; "Prva odvesna + druha odvesna"
+fsqrt; "odmocnina zo suctu odvesien(Genitiv pluralu od slova odvesna, som informatik nie linguistik.)"
+
+fstp prepona; "Ulozenie hodnoty st(0) do premennej"
+
+ret
+PreponaTrojuholnika endp
+
+END main

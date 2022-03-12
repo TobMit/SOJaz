@@ -1,0 +1,72 @@
+TITLE MASM Template(main.asm)
+
+INCLUDE Irvine32.inc
+; "Zadanie"
+; "4. Vytvorte rekurziu na vypocet n-teho clena Fibonacciho postupnosti. "
+
+.386; "Definuje 32 bitovy program, ktory ma pristup k 32 bitovym registrom"
+; .model flat, stdcall; "Zvoli pamatovy model flat a spristpupni volaciu metodu pre procedury - stdcall"
+.stack 4096; "Uvolni pre aplikaciu 4096 bajtov pamate"
+ExitProcess proto, dwExitCode:dword; "Deklaruje prototyp ExitProcess, co je defaultna funkcia pre Windows, ktora ukoncuje program, exitCode 0 znamena ukocenie programu bez chyby, ine definuju cislo chyb"
+
+.data
+
+.code
+main PROC
+
+push 8
+
+call Fibonacci
+
+call WriteDec
+call Crlf
+
+invoke ExitProcess, 0
+main ENDP
+
+
+
+; "---------------------------------------------"
+Fibonacci proc
+; "Vypocita n-te cislo fibonacciho postupnosti"
+; "Vstup: [ebp + 8] = n-te cislo"
+; "Vystup: eax = vysledok"
+; "---------------------------------------------"
+	push ebp ; "Pridaj do stacku aktualnu adresu"
+	mov ebp, esp ; "Skopiruj prave vlozenu adresu naspat"
+	mov eax, [ebp + 8] ;"Pred zaciatkom programu som pushol 32-bitovy register, co je adresa ebp + 4, na zaciatku programu som pushol ebp, cize adresa cisla sa posunie na ebp + 8"
+
+	cmp eax, 2
+	ja L1
+	mov eax, 1
+	mov bl, 0 ;"n = 1"
+	mov bh, 1 ;"n = 2"
+	jmp L2
+L1:
+	dec eax
+	push eax
+	call Fibonacci
+
+FibonacciOutput:
+	;"Zisti sucet n - 1 a n - 2"
+	mov dl, bh 
+	add dl, bl
+	
+	movsx eax, dl ;"Uloz sucet do eax"
+
+	mov bl, bh	;"n - 2 = n - 1"
+	mov bh, dl ;"n - 1 = n"
+
+L2:
+	pop ebp
+	ret 4
+
+OutputFirstNumber:
+	mov ebx, 0
+	ret 4
+
+
+Fibonacci endp
+	
+	
+END main

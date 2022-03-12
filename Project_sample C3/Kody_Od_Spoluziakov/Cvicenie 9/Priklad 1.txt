@@ -1,0 +1,58 @@
+TITLE MASM Template(main.asm)
+
+INCLUDE Irvine32.inc
+; "Zadanie"
+; "Vytvorte rekurziu na vypocet n!"
+
+.386; "Definuje 32 bitovy program, ktory ma pristup k 32 bitovym registrom"
+; .model flat, stdcall; "Zvoli pamatovy model flat a spristpupni volaciu metodu pre procedury - stdcall"
+.stack 4096; "Uvolni pre aplikaciu 4096 bajtov pamate"
+ExitProcess proto, dwExitCode:dword; "Deklaruje prototyp ExitProcess, co je defaultna funkcia pre Windows, ktora ukoncuje program, exitCode 0 znamena ukocenie programu bez chyby, ine definuju cislo chyb"
+
+.data
+
+.code
+main PROC
+call ReadInt
+
+push eax
+call Factorial
+call WriteDec
+call Crlf
+
+invoke ExitProcess, 0
+main ENDP
+
+
+
+; "---------------------------------------------"
+Factorial proc
+; "Vypocita faktorial zo zadaneho cisla"
+; "Vstup: ecx = cislo"
+; "Vystup: eax = vysledok"
+; "---------------------------------------------"
+	push ebp ; "Pridaj do stacku aktualnu adresu"
+	mov ebp, esp ; "Skopiruj prave vlozenu adresu naspat"
+	mov eax, [ebp + 8] ;"Pred zaciatkom programu som pushol 32-bitovy register, co je adresa ebp + 4, na zaciatku programu som pushol ebp, cize adresa cisla sa posunie na ebp + 8"
+	cmp eax, 0
+	ja L1
+	mov eax, 1
+	jmp L2
+
+L1:
+	dec eax
+	push eax
+	call Factorial
+
+ReturnFact:
+	mov ebx, [ebp + 8]
+	mul ebx
+
+L2:
+	pop ebp
+	ret 4
+
+Factorial endp
+	
+	
+END main

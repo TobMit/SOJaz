@@ -1,0 +1,87 @@
+TITLE MASM Template(main.asm)
+
+INCLUDE Irvine32.inc
+; "Zadanie"
+; "Nacitajte postupnost cisiel typu word. Vypiste najmensie cislo a jeho poradie v postupnosti."
+
+.386; "Definuje 32 bitovy program, ktory ma pristup k 32 bitovym registrom"
+; .model flat, stdcall; "Zvoli pamatovy model flat a spristpupni volaciu metodu pre procedury - stdcall"
+.stack 4096; "Uvolni pre aplikaciu 4096 bajtov pamate"
+ExitProcess proto, dwExitCode:dword; "Deklaruje prototyp ExitProcess, co je defaultna funkcia pre Windows, ktora ukoncuje program, exitCode 0 znamena ukocenie programu bez chyby, ine definuju cislo chyb"
+.data
+outputMessage byte "Najmensie cislo: ", 0
+indexMessage byte "Index cisla: ", 0
+inputMessage byte "Napis postupnost 6tich cisel"
+numberArray word 6 dup(?)
+len = ($ - numberArray) / type word - 1;"Premenna, ktora ma v sebe pocet prvkov pola"
+answerNo byte "nie", 0 
+answerYes byte "ano", 0
+found word 0
+lowestNumber word 1 dup(?)
+.code
+main PROC
+;"Nacitanie cisel"
+mov esi, 0
+
+mov edx, offset inputMessage
+call WriteString
+call Crlf
+
+loadArray:
+	call ReadInt
+	mov numberArray[esi * 2], ax
+
+	cmp esi, len
+	je continueProgram
+
+	inc esi
+	jmp loadArray
+
+continueProgram:
+	mov ebx, offset numberArray
+	mov edx, offset lowestNumber
+	mov di, numberArray[0]
+	mov[edx], di
+
+	mov esi, 0
+	mov edi, 0
+	inc esi
+
+mainLoop:
+	mov ax, numberArray[esi * 2]
+	cmp ax, lowestNumber
+	jl numberFound
+
+	continueMainLoop:
+		cmp esi, len
+		je output
+
+		inc esi
+		jmp mainLoop
+
+numberFound:
+	mov di, numberArray[esi * 2]
+	mov[edx], di
+	mov edi, esi
+	jmp continueMainLoop
+
+output:
+	mov edx, offset outputMessage
+	call WriteString
+	mov edx, offset lowestNumber
+	movsx eax, lowestNumber
+	call WriteInt
+
+	call Crlf
+	mov edx, offset indexMessage
+	call WriteString
+	mov eax, edi
+	call WriteDec
+	jmp ExitProgram
+
+ExitProgram:
+	invoke ExitProcess, 0
+
+main ENDP
+
+END main

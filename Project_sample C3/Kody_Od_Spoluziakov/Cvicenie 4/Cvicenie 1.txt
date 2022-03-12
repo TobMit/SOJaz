@@ -1,0 +1,65 @@
+TITLE MASM Template(main.asm)
+
+INCLUDE Irvine32.inc
+; "Zadanie"
+; "1. Nacitajte retazec R. Skopirujte R do retazca S tak, ze dvojicu pismen 'as' nahradite znakom '*'. Retazec S vypiste. Pri pristupe k retazcom pouzite nepriamu adresu s bazou a indexom."
+.data
+R byte 21 dup(0)
+S byte 21 dup(0)
+testVar byte "ABCD"
+inputMessage byte "Nacitaj retazec o dlzke 20 znakov", 0
+outputMessage byte "Nacitany retazec po uprave: ", 0
+.code
+main PROC
+mov ebx, offset S
+mov edx, offset R
+
+mov edx, offset inputMessage
+call WriteString
+call Crlf
+
+mov ecx, sizeof R
+call ReadString
+
+xor esi, esi; "Pocitadlo R" 
+xor edi, edi; "Pocitato S"
+
+mainLoop:
+	mov al, [edx + esi]
+	cmp al, 0
+	je writeOutput
+	cmp al, 'a'
+	je firstConditionMet
+	mov [ebx + edi], al
+	inc edi
+	inc esi
+	jmp mainLoop
+
+firstConditionMet:
+	inc esi
+	mov al, [edx + esi]
+	cmp al, 's'
+	je secondConditionMet
+	dec esi
+	mov al, [edx + esi]
+	mov[ebx + edi], al
+	inc edi
+	inc esi
+	jmp mainLoop
+secondConditionMet:
+	mov al, '*'
+	mov[ebx + edi], al
+	inc edi
+	inc esi
+	jmp mainLoop
+	
+writeOutput:
+	mov edx, offset S
+	call WriteString
+	jmp exitProgram
+
+exitProgram:
+	exit
+main ENDP
+
+END main

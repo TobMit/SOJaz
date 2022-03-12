@@ -1,0 +1,32 @@
+TITLE MASM Template(main.asm)
+
+INCLUDE Irvine32.inc
+; "Zadanie"
+; "2. Nacitajte cele cislo bez znamienka v rozsahu <0; 65 535>. Vypocitajte hodnotu cisla a ulozte ju do registra AX."
+.data
+inputValue byte 6 dup(0)
+.code
+main PROC
+mov edx, offset inputValue
+mov ecx, sizeof inputValue
+call ReadString
+
+xor edi, edi
+xor eax, eax
+xor ebx, ebx
+mainLoop:
+	mov al, [edx + edi]
+	cmp al, 0
+	je exitProgram
+	sub al, 48 ;to iste ako and al, 0Fh
+	imul bx, 10
+	add bx, ax
+	inc edi
+	jmp mainLoop
+exitProgram:
+	mov ax, bx
+	call WriteInt
+	exit
+main ENDP
+
+END main

@@ -1,0 +1,18 @@
+TITLE MASM Template(main.asm)
+
+INCLUDE Irvine32.inc
+; "Zadanie"
+; "1. V retazci, ktory je definovany v pamati v datovom segmente na tretej pozicii nahradte znak, ktory sa tam nachadza znakom 'X' a tento retazec vypiste na obrazovku. 
+.data
+myMessage byte "message"
+
+.code
+main PROC
+	mov myMessage[2], 'X'
+	mov	 edx,OFFSET myMessage
+	call WriteString
+
+	exit
+main ENDP
+
+END main

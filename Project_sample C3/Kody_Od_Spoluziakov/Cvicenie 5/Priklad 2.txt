@@ -1,0 +1,60 @@
+TITLE MASM Template(main.asm)
+
+INCLUDE Irvine32.inc
+; "Zadanie"
+; "2. Vypiste obsah registra AX v sestnaskovej sustave. Zakaz pouzivat WriteHex a WriteHexB!"
+.data
+
+number DB 5 dup(0), '/'
+delitel DW 16
+isNegative DB 0
+.code
+main PROC
+call Clrscr
+
+mov ax, -15; "POZOR!!, interval pre cislo bez znamienka je <0, 65 535> a pre cislo so znamienkom <-32 768, 32 767>"
+xor dx, dx
+xor esi, esi
+
+mov ebx, offset number
+
+test ax, ax
+js setIsNegative
+
+mainLoop:
+	idiv delitel; "AX:delitel, Podiel ide do AX, zvysok do DX"
+	cmp dl, 9
+	ja isHexadecimalNumber
+	add dl, 48; "Zmena cisla na ASCII hodnotu cisla, to iste ako or dl, 30h"
+	continueMainLoop:
+	mov[ebx + esi], dl
+	inc esi
+	cmp ax, 0
+	je WriteOutput
+	xor dx, dx ;"Prikaz idiv funguje len ak je dx rovne 0"
+	jmp mainLoop
+isHexadecimalNumber:
+	add dl, 55; "Zmen hodnotu cisla od 10-15 na hodnotu A-F"
+	jmp continueMainLoop
+setIsNegative:
+	inc isNegative
+	neg ax
+	jmp mainLoop
+writeNegativeSign:
+	mov al, '-'
+	call WriteChar
+	jmp WriteOutputLoop
+WriteOutput: ;"Kedze je cislo zapisane v premennej number opacne, musime ho vypisat odzadu"
+	mov ecx, esi
+	cmp isNegative, 1
+	je writeNegativeSign
+	WriteOutputLoop:
+		mov al, [ebx + ecx - 1]
+		call WriteChar
+		loop WriteOutputLoop ;"Prikaz loop zopakuje prikaz az pokial sa ecx nerovna 0, potom skoci na instrukciu/instrukcie pod tymto prikazom"
+		jmp ExitProgram
+ExitProgram:
+	exit
+main ENDP
+
+END main

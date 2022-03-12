@@ -1,0 +1,25 @@
+TITLE MASM Template(main.asm)
+
+INCLUDE Irvine32.inc
+; "Zadanie"
+; "2. Vypiste definovany retazec na obrazovku tak, aby kazde pismeno retazca bolo na samostatnom riadku." 
+.data
+myMessage byte "message", 0
+
+.code
+main PROC
+	mov ebx, offset myMessage
+	xor edi, edi
+	mainLoop:
+		mov al, [ebx + edi]
+		cmp al, 0
+		je exitProgram
+		call WriteChar
+		call Crlf
+		inc edi
+		jmp mainLoop
+	exitProgram:
+		exit
+main ENDP
+
+END main
